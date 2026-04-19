@@ -184,6 +184,7 @@ document.addEventListener("click",function(e){
   else if(a==="setFil")     {bFilter=id;rBills();}
   else if(a==="tgInc")      tgInc(id);
   else if(a==="tgBill")     tgBill(id,id2);
+  else if(a==="editBill")    openEditBill(id,id2);
   else if(a==="addInc")     addInc();
   else if(a==="addBill")    addBill();
   else if(a==="delInc")     delInc(id);
@@ -587,6 +588,8 @@ function rBills(){
       h+="<input type=\"number\" min=\"0\" max=\"31\" value=\""+(b.due||0)+"\" data-action=\"upBillDue\" data-id=\""+a.id+"\" data-id2=\""+b.id+"\" style=\"background:"+(b.due>0?"#F5FAF5":"#fff")+";border:1px solid #C0D8C0;border-radius:6px;color:#0F1E0F;padding:2px 6px;font-size:11px;font-weight:700;width:48px;outline:none\">";
       h+="</div></div>";
       h+="<input type=\"number\" class=\"ae\" value=\""+(b.amount||0)+"\" data-action=\"upBill\" data-id=\""+a.id+"\" data-id2=\""+b.id+"\" style=\"color:"+(b.paid?"#8AAA8A":a.color)+";flex-shrink:0;width:80px\">";
+      h+="<button data-action=\"editBill\" data-id=\""+a.id+"\" data-id2=\""+b.id+"\" style=\"background:#F0FAF0;border:1px solid #B0D8B0;border-radius:6px;color:#1A5C1A;font-size:11px;font-weight:700;cursor:pointer;padding:4px 8px;flex-shrink:0\">Edit</button>";
+      h+="<button data-action=\"editBill\" data-id=\""+a.id+"\" data-id2=\""+b.id+"\" style=\"background:#F0FAF0;border:1px solid #B0D8B0;border-radius:6px;color:#1A5C1A;font-size:11px;font-weight:700;cursor:pointer;padding:4px 8px;flex-shrink:0;white-space:nowrap\">Edit</button>";
       h+="<button data-action=\"delBill\" data-id=\""+a.id+"\" data-id2=\""+b.id+"\" style=\"background:none;border:none;color:#FCA5A5;font-size:16px;cursor:pointer;padding:0;flex-shrink:0\">&#215;</button>";
       h+="</div></div>";
     }
@@ -612,6 +615,34 @@ function upBill(ac,bid,v){var b=(M().bills[ac]||[]).find(function(x){return x.id
 function upBillDue(ac,bid,v){var b=(M().bills[ac]||[]).find(function(x){return x.id===bid;});if(b){b.due=+v||0;save();rBills();toast("&#10003; Due date updated");}}
 function delBill(ac,bid){if(!M().bills[ac])return;M().bills[ac]=M().bills[ac].filter(function(x){return x.id!==bid;});save();rBills();rPlan();toast("Removed");}
 function addBill(){var n=document.getElementById("bn").value.trim();if(!n)return;var ac=document.getElementById("bac").value;if(!M().bills[ac])M().bills[ac]=[];M().bills[ac].push({id:uid(),name:n,amount:+document.getElementById("ba").value||0,due:+document.getElementById("bd").value||0,paid:false});save();rBills();toast("&#10003; Added");}
+function openEditBill(ac,bid){
+  var b=(M().bills[ac]||[]).find(function(x){return x.id===bid;});if(!b)return;
+  document.getElementById("eb-name").value=b.name;
+  document.getElementById("eb-amount").value=b.amount;
+  document.getElementById("eb-due").value=b.due||0;
+  document.getElementById("eb-ac").value=ac;
+  document.getElementById("eb-orig-ac").value=ac;
+  document.getElementById("eb-id").value=bid;
+  document.getElementById("edit-bill-modal").style.display="flex";
+}
+function saveEditBill(){
+  var bid=document.getElementById("eb-id").value;
+  var origAc=document.getElementById("eb-orig-ac").value;
+  var newAc=document.getElementById("eb-ac").value;
+  var name=document.getElementById("eb-name").value.trim();
+  var amount=+document.getElementById("eb-amount").value||0;
+  var due=+document.getElementById("eb-due").value||0;
+  if(!name)return;
+  var b=(M().bills[origAc]||[]).find(function(x){return x.id===bid;});if(!b)return;
+  M().bills[origAc]=M().bills[origAc].filter(function(x){return x.id!==bid;});
+  if(!M().bills[newAc])M().bills[newAc]=[];
+  b.name=name;b.amount=amount;b.due=due;
+  M().bills[newAc].push(b);
+  save();rBills();rPlan();
+  document.getElementById("edit-bill-modal").style.display="none";
+  toast(origAc!==newAc?"Moved!":"Updated");
+}
+function closeEditBill(){document.getElementById("edit-bill-modal").style.display="none";}
 function rAccounts(){
   var acBal=ACBAL(), h="";
   h+="<div class=\"hero\" style=\"margin-bottom:14px\">";
@@ -845,4 +876,6 @@ load(); go("dash2026");
 </div>
 <div style="margin-top:10px;text-align:center"><span onclick="clearSetup()" style="font-size:11px;color:#FCA5A5;cursor:pointer">Disconnect</span></div>
 </div></div>
+
+<div id="edit-bill-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:999;align-items:center;justify-content:center;padding:20px"><div style="background:#fff;border-radius:20px;padding:22px;width:100%;max-width:390px"><div style="font-size:16px;font-weight:800;color:#0F1E0F;margin-bottom:14px">Edit / Move Bill</div><input type="hidden" id="eb-id"><input type="hidden" id="eb-orig-ac"><div style="display:flex;flex-direction:column;gap:9px;margin-bottom:14px"><div><div style="font-size:11px;font-weight:700;color:#5A7A5A;margin-bottom:4px">Bill name</div><input id="eb-name" style="background:#F5FAF5;border:1.5px solid #C0D8C0;border-radius:10px;color:#0F1E0F;padding:10px 12px;font-size:14px;width:100%;outline:none"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div><div style="font-size:11px;font-weight:700;color:#5A7A5A;margin-bottom:4px">Amount $</div><input id="eb-amount" type="number" style="background:#F5FAF5;border:1.5px solid #C0D8C0;border-radius:10px;color:#0F1E0F;padding:10px 12px;font-size:14px;width:100%;outline:none;font-family:Courier New,monospace;font-weight:700"></div><div><div style="font-size:11px;font-weight:700;color:#5A7A5A;margin-bottom:4px">Due day</div><input id="eb-due" type="number" min="0" max="31" style="background:#F5FAF5;border:1.5px solid #C0D8C0;border-radius:10px;color:#0F1E0F;padding:10px 12px;font-size:14px;width:100%;outline:none;font-weight:700"></div></div><div><div style="font-size:11px;font-weight:700;color:#5A7A5A;margin-bottom:4px">Move to account</div><select id="eb-ac" style="background:#F5FAF5;border:1.5px solid #C0D8C0;border-radius:10px;color:#0F1E0F;padding:10px 12px;font-size:14px;width:100%;outline:none"><option value="bizB">Business Bills</option><option value="houseB">House Bills</option><option value="houseO">House Operating</option><option value="claire">Claire</option><option value="andrew">Andrew</option></select></div></div><div style="display:flex;gap:8px"><button onclick="saveEditBill()" style="flex:1;background:#1A5C1A;color:#fff;border:none;border-radius:12px;padding:12px;font-size:14px;font-weight:700;cursor:pointer">Save & Move</button><button onclick="closeEditBill()" style="flex:1;background:#fff;color:#2D7A2D;border:1.5px solid #B0D0B0;border-radius:12px;padding:11px;font-size:14px;font-weight:700;cursor:pointer">Cancel</button></div></div></div>
 </body></html>
